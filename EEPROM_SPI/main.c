@@ -1,6 +1,6 @@
 #include <msp430.h> 
 #include <stdint.h>
-#include <stdio.h>
+#include <string.h>
 #include "spieeprom.h"
 
 /*
@@ -10,21 +10,17 @@ int main(void) {
     WDTCTL = WDTPW | WDTHOLD;	// Stop watchdog timer
     P1DIR |= BIT6;
     P1OUT &= ~BIT6;
-    uint8_t value = 0;
 
+    uint16_t addr = 0x00;
+    uint8_t data[16] = {0,};
+    char rawdata[32] = "Who is single dog?";
 
     eeprom_init();
-    eeprom_enable_write();
-	eeprom_write_byte(0x0001, 'a');
-
-	value = eeprom_read_byte(0x0001);
-	if (value == 'a') {
-		P1OUT |= BIT6;
-	}
-	value = eeprom_read_byte(0x0002);
 
     eeprom_enable_write();
-    eeprom_write_byte(0x0009, value);
+    eeprom_write_bytes(addr, rawdata, strlen(rawdata));
+
+    eeprom_read_bytes(addr, data, 16);
 
     eeprom_disable_write();
 }

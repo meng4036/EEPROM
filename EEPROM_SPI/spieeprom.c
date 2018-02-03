@@ -16,7 +16,6 @@ void spi_master_init() {
     P1SEL = BIT1 + BIT2 + BIT4;
     P1SEL2 = BIT1 + BIT2 + BIT4;
 
-    //UCA0CTL0 = UCMSB + UCMST + UCMODE_2 + UCSYNC;
 	UCA0CTL0 |= UCSWRST;
     UCA0CTL0 |= UCCKPH + UCMSB + UCMODE_0 + UCMST + UCSYNC;
     UCA0CTL1 = UCSSEL_1;
@@ -33,13 +32,6 @@ uint8_t spi_write_byte(uint8_t byte) {
 	UCA0TXBUF = byte;
 	while (UCA0STAT & UCBUSY);
 	return UCA0RXBUF;
-}
-
-void spi_write_bytes(uint8_t *data, uint8_t size) {
-	  unsigned int i;
-	  for (i = 0; i < size; i++) {
-	    spi_write_byte(data[i]);
-	  }
 }
 
 void spi_enable_slave() {
@@ -78,6 +70,27 @@ uint8_t eeprom_read_byte(uint16_t addr) {
 	return c;
 }
 
+void eeprom_read_bytes(uint16_t addr, uint8_t *buf, uint8_t size) {
+	uint8_t i = 0;
+
+	/* pull down CS line to select device */
+	spi_enable_slave();
+
+	/* transmit read command */
+	spi_write_byte(OPCODE_READ);
+
+	/* transmit address to be read*/
+	spi_write_byte(addr >> 8);
+	spi_write_byte(addr & 0xff);
+
+	/* read data from SPI receive buffer register */
+	while((i<size)) {
+		*(buf + i) = spi_write_byte(OPCODE_READ);
+		i++;
+	}
+	spi_disable_slave();
+}
+
 void eeprom_write_byte(uint16_t addr, uint8_t data) {
 	/* pull down CS line to select device */
 	spi_enable_slave();
@@ -96,30 +109,25 @@ void eeprom_write_byte(uint16_t addr, uint8_t data) {
 	spi_disable_slave();
 }
 
-uint8_t eeprom_read_multibyte(uint16_t addr, uint8_t *buf, uint8_t size) {
-	uint8_t i = 0;
-	uint8_t byte;
-
+void eeprom_write_bytes(uint16_t addr, const char *buf, uint8_t size) {
 	/* pull down CS line to select device */
-	spi_enable_slave();
+		spi_enable_slave();
 
-	/* transmit read command */
-	spi_write_byte(OPCODE_READ);
+		/* transmit write command */
+		spi_write_byte(OPCODE_WRITE);
 
-	/* transmit address to be read*/
-	spi_write_byte(addr >> 8);
-	spi_write_byte(addr & 0xff);
+		/* transmit byte address to be write*/
+		spi_write_byte(addr >> 8);
+		spi_write_byte(addr & 0xff);
 
-	/* read data from SPI receive buffer register */
-	while((i<size)) {
-		byte = spi_read_byte();
-		*(buf + i) = byte;
-		i++;
+		/* transmit byte to be write */
+		char *end = buf + size;
+		while(buf != end) {
+			spi_write_byte(*buf++);
+		}
 
-		spi_write_byte(OPCODE_READ);
-	}
-	spi_disable_slave();
-	return i;
+		/* disable slave */
+		spi_disable_slave();
 }
 
 void eeprom_enable_write() {

@@ -27,8 +27,10 @@ void spi_enable_slave();
 
 void eeprom_init();
 uint8_t eeprom_read_byte(uint16_t addr);
+void eeprom_read_bytes(uint16_t addr, uint8_t *buf, uint8_t size);
 void eeprom_write_byte(uint16_t addr, uint8_t data);
-uint8_t eeprom_read_multibyte(uint16_t addr, uint8_t *buf, uint8_t size);
+void eeprom_write_bytes(uint16_t addr, const char *buf, uint8_t size);
+
 void eeprom_enable_write();
 void eeprom_disable_write();
 uint8_t eeprom_read_status_register();
